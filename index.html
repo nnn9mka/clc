@@ -149,7 +149,7 @@
             clearTimeout(timer)
             timer = setTimeout(()=>{
                 clearList()
-                let txt = e.target.value.toString();
+                let txt = e.target.value.toString()?.toLowerCase();
                 
                 let data = [];
                 if (txt.split('tel:').length!=1 && txt.split('tel:')[1]!='') {

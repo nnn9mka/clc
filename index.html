@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
+    <link rel="manifest" href="demo.pwa.json">
+    <style>
+        *{
+            padding: 0px;
+            margin: 0px;
+            box-sizing: border-box;
+        }
+        body{
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        .list{
+            display: flex;
+            flex-flow: column;
+            gap: 0.8rem;
+            padding: 1rem 0px;
+        }
+
+        .card .fullname{
+            font-size: 20px;
+            font-weight: 600;
+            color: #0d6efd;
+        }
+
+        .card{
+            padding: .4rem;
+            -webkit-box-shadow: 0px 0px 2px 1px rgba(61, 109, 145, 0.1);
+            -moz-box-shadow: 0px 0px 2px 1px rgba(61, 109, 145, 0.1);
+            box-shadow: 0px 0px 2px 1px rgba(61, 109, 145, 0.1);
+        }
+        .card .group{
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 5px;
+            font-size: 15px;
+            font-weight: 400;
+            color: #004dbf;
+        }
+
+        .fileInput {
+            width: 100%;
+            padding: 6px;
+            background-color: #f3f3f3;
+            color: #4d4d4d;
+            text-align: center;
+            border: 1px solid #e9e9e9;
+            border-radius: 0.375rem;
+        }
+
+        header{
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+  </head>
+  <body>
+    <header>
+        <label for="fileContacts" class="fileInput">Загрузить файл (.clc)</label>
+        <input id="fileContacts" type="file" accept=".clc" style="display: none;">
+        <input class="form-control" id="search" type="text" placeholder="Поиск">
+    </header>
+    <div class="list">
+        <div class="card">
+            <div class="fullname">Комаров Сергей Дмитриевич</div>
+            <div class="group">
+                <div>Дата рождения: 13.06.1942</div>
+                <div>СНИЛС: 004-814-209 11</div>
+            </div>
+            <a type="button" class="btn btn-primary">Позвонить</a>
+        </div>
+        <div class="card">
+            <div class="fullname">Комаров Сергей Дмитриевич</div>
+            <div class="group">
+                <div>Дата рождения: 13.06.1942</div>
+                <div>СНИЛС: 004-814-209 11</div>
+            </div>
+            <a type="button" class="btn btn-primary">Позвонить</a>
+        </div>
+    </div>
+    <script src="./pako.js"></script>
+    <script>
+        let list = [];
+
+        function getAge(dateString) {
+            var today = new Date();
+            var birthDate = new Date(dateString);
+            var age = today.getFullYear() - birthDate.getFullYear();
+            var m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+        function plural(number, titles) {  
+            cases = [2, 0, 1, 1, 1, 2];  
+            return titles[ (number%100>4 && number%100<20)? 2 : cases[(number%10<5)?number%10:5] ];  
+        }
+
+        var declension = ['год', 'года', 'лет'];
+
+        function addItemList(data) {
+            let card = document.createElement('div');
+            card.classList.add('card');
+            let fullname = document.createElement('div')
+            fullname.classList.add('fullname');
+            fullname.textContent=data[0];
+            let group = document.createElement('div')
+            group.classList.add('group');plural(1, declension)
+            group.innerHTML += `<div>Дата рождения: ${data[2]} (${getAge(data[2].split('.').reverse().join('.'))} ${plural(getAge(data[2].split('.').reverse().join('.')), declension)})</div>
+            <div>СНИЛС: ${data[1]}</div>`;
+            let phoneHref = document.createElement('a');
+            phoneHref.classList.value = 'btn btn-primary';
+            phoneHref.textContent= 'Позвонить'
+            phoneHref.href = `tel:${data[3]}`
+            card.appendChild(fullname)
+            card.appendChild(group)
+            card.appendChild(phoneHref)
+
+            document.querySelector('.list').appendChild(card)
+        }
+
+        function clearList() {
+            document.querySelector('.list').innerHTML = '';
+        }
+
+        function alert(text) {
+            document.querySelector('.list').innerHTML = `<div class="alert alert-primary" role="alert">${text}</div>`;
+        }
+
+
+        function search(text, data) {
+            return data.filter(e=>e[0].toLowerCase().includes(text.toLowerCase()))
+        }
+
+        let timer = null;
+        document.querySelector('#search').addEventListener('input',(e)=>{
+            clearTimeout(timer)
+            console.log(e.target.value);
+            timer = setTimeout(()=>{
+                clearList()
+                console.log('search: '+e.target.value);
+                let data = search(e.target.value, list);
+                if (data.length == 0) {
+                    alert('Ничего не найдено!');
+                    return;
+                }
+                data.map(el=>addItemList(el))
+            },300);
+        })
+
+        function start() {
+            let ls = localStorage.getItem('DataList')
+            if (ls != null) {
+                list = JSON.parse(ls);
+            }
+            clearList()
+            if (list.length == 0) {
+                alert('Список пуст!')
+            }else{
+                document.querySelector('label').textContent = 'Обновить данные (.clc)'
+            }
+            list.map(e=>addItemList(e))
+        }
+
+        document.getElementById('fileContacts').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+
+                reader.addEventListener('load', (event) => {
+                let i = null;
+                try {
+                    i = JSON.parse(pako.inflate(event.target.result, { to: 'string' }));
+                
+                } catch (error) {
+                    alert('Ошибка чтения файла! Файл поврежден!');
+                    return;
+                }
+                
+                localStorage.clear();
+                localStorage.setItem('DataList', JSON.stringify(i));
+                start();
+
+                });
+
+                reader.readAsArrayBuffer(e.target.files[0]);
+                
+            }
+        });
+
+        start();
+
+        if ("serviceWorker" in navigator) {
+            self.addEventListener("load", async () => {
+                const container = navigator.serviceWorker;
+                if (container.controller === null) {
+                    const reg = await container.register("sw.js");
+                }
+            });
+        }
+    </script>
+  </body>
+</html>

@@ -140,18 +140,26 @@
         }
 
 
-        function search(text, data) {
-            return data.filter(e=>e[0].toLowerCase().includes(text.toLowerCase()))
+        function search(text, data, inx = 0) {
+            return data.filter(e=>e[inx].toLowerCase().includes(text?.toLowerCase()))
         }
 
         let timer = null;
         document.querySelector('#search').addEventListener('input',(e)=>{
             clearTimeout(timer)
-            console.log(e.target.value);
             timer = setTimeout(()=>{
                 clearList()
-                console.log('search: '+e.target.value);
-                let data = search(e.target.value, list);
+                let txt = e.target.value.toString();
+                
+                let data = [];
+                if (txt.split('tel:').length!=1 && txt.split('tel:')[1]!='') {
+                    data = search(txt.split('tel:')[1], list, 3);
+                } else if (txt.split('age:').length!=1 && txt.split('age:')[1]!='') {
+                    data = search(txt.split('age:')[1], list, 2);
+                } else{
+                    data = search(e.target.value, list);
+                }
+
                 if (data.length == 0) {
                     alert('Ничего не найдено!');
                     return;
